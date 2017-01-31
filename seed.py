@@ -2,12 +2,11 @@
 
 from sqlalchemy import func
 from model import User, Movie, Rating
-# from model import Rating
-# from model import Movie
 
 from model import connect_to_db, db
 from server import app
 import re
+from datetime import datetime
 
 
 def load_users():
@@ -51,13 +50,18 @@ def load_movies():
 
     for row in f:
         row = row.rstrip()
-        movie_id, title, release_date, _, imdb_url,\
-            _, _, _, _, _, _, _, _, _, _,\
-            _, _, _, _, _, _, _, _, _ = row.split("|")
+        movie_id, title, released_at, _, imdb_url = row.split("|")[:5]
+
+        title = title.split("(")[0].rstrip()
+
+        if released_at:
+            released_at = datetime.strptime(released_at, "%d-%b-%Y")
+        else:
+            released_at = None
 
         movie = Movie(movie_id=movie_id,
                       title=title,
-                      release_at=release_date,
+                      released_at=released_at,
                       imdb_url=imdb_url)
 
         # We need to add to the session or it won't ever be stored
@@ -81,7 +85,7 @@ def load_ratings():
 
     for row in f:
         row = row.rstrip()
-        user_id, movie_id, score, timestamp = re.split(r'/t+', row)
+        user_id, movie_id, score = re.split(r'\t+', row)[:3]
 
         rating = Rating(user_id=user_id,
                         movie_id=movie_id,

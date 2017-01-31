@@ -35,9 +35,9 @@ class Movie(db.Model):
     __tablename__ = "movies"
 
     movie_id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(64), nullable=False)
-    released_at = db.Column(db.DateTime, nullable=False)
-    imdb_url = db.Column(db.String(120), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    released_at = db.Column(db.DateTime, nullable=True)
+    imdb_url = db.Column(db.String(200), nullable=False)
 
 
 class Rating(db.Model):
@@ -50,9 +50,12 @@ class Rating(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
+    user = db.relationship('User', backref='ratings')
+    movie = db.relationship('Movie', backref='ratings')
 
 ##############################################################################
 # Helper functions
+
 
 def connect_to_db(app):
     """Connect the database to our Flask app."""
