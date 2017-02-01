@@ -4,6 +4,7 @@ from jinja2 import StrictUndefined
 
 from flask import Flask, jsonify, render_template, request, session, flash, redirect
 from flask_debugtoolbar import DebugToolbarExtension
+from sqlalchemy.orm.exc import NoResultFound
 
 from model import connect_to_db, db, User, Rating, Movie
 
@@ -34,42 +35,71 @@ def user_list():
     return render_template('user_list.html', users=users)
 
 
+@app.route('/users/<userid>')
+def user_info(userid):
+    """Shows available info for given user"""
+
+    user = User.query.filter_by(user_id=userid).one()
+    ratings = Rating.query.filter_by(user_id=userid).all()
+    mv_ratings = []
+
+    for rating in ratings:
+        movie = Movie.query.filter_by(movie_id=rating.movie_id).one()
+        mv_ratings.append((movie.title, rating.score))
+
+    return render_template('user.html', user=user, ratings=mv_ratings)
+
+
 @app.route('/login')
 def log_in():
+    """Log in page"""
 
     return render_template('sign_in.html')
 
 
 @app.route('/process_login', methods=["POST"])
 def process_login():
+    """Processes login and adds new users"""
 
     email = request.form.get('email')
     # check if user exists
+    password = request.form.get('password')
 
     try:
-        User.query.filter_by(email=email).one()
-    except:
+        user = User.query.filter_by(email=email).one()
+    # only throws exception if there is no entry in the database
+    # if there are too many, the user is out of luck
+    except NoResultFound:
         flash("A new user has been created")
-        user = User(email=email)
 
-                user = User(user_id=user_id,
-                    age=age,
-                    zipcode=zipcode)
-
-        # We need to add to the session or it won't ever be stored
+        user = User(email=email, password=password)
         db.session.add(user)
 
-    # Close file
-    f.close()
+        session['user'] = user.user_id
+        db.session.commit()
 
-    # Once we're done, we should commit our work
-    db.session.commit()
+        html = '/users/' + str(user.user_id)
+        return redirect(html)
 
-    # check if password correct
-        return redirect('/')
+    if password == user.password:
+
+        flash("Logged in!")
+        session['user'] = user.user_id
+        html = '/users/' + str(user.user_id)
+        return redirect(html)
+
+    flash("Your email or password is incorrect.")
+    return redirect('/login')
 
 
-        return redirect('/login')
+@app.route('/logout')
+def logout():
+    """Logs out the user"""
+
+    session.pop('user')
+    flash("You have been logged out.")
+    return redirect('/')
+
 
 if __name__ == "__main__":
     # We have to set debug=True here, since it has to be True at the
