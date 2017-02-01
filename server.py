@@ -40,13 +40,15 @@ def user_info(userid):
     """Shows available info for given user"""
 
     user = User.query.filter_by(user_id=userid).one()
-    ratings = Rating.query.filter_by(user_id=userid).all()
-    mv_ratings = []
+    ### Rewrite this to be done with joins and only one query
+    # ratings = Rating.query.filter_by(user_id=userid).all()
+    # mv_ratings = []
 
-    for rating in ratings:
-        movie = Movie.query.filter_by(movie_id=rating.movie_id).one()
-        mv_ratings.append((movie.title, rating.score))
+    # for rating in ratings:
+    #     movie = Movie.query.filter_by(movie_id=rating.movie_id).one()
+    #     mv_ratings.append((movie.title, rating.score))
 
+    # mv_ratings = db.session.query(Rating.user_id)
     return render_template('user.html', user=user, ratings=mv_ratings)
 
 
