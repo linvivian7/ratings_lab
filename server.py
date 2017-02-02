@@ -77,19 +77,20 @@ def add_score():
 
     try:
         user = session["user"]
-    except:
+    except KeyError:
         return "Please log in or register to submit your ratings"
 
     try:
         rating = Rating.query.filter((Rating.user_id == user) & (Rating.movie_id == movie_id)).one()
-        rating.score = new_score
-        db.session.commit()
-        return "Your rating has been updated!"
-    except:
+    except NoResultFound:
         rating = Rating(movie_id=movie_id, user_id=user, score=new_score)
         db.session.add(rating)
         db.session.commit()
         return "Your rating has been added!"
+
+    rating.score = new_score
+    db.session.commit()
+    return "Your rating has been updated!"
 
 
 @app.route('/login')

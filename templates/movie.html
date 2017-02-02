@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+
+  <h2>{{ movie.title }}</h2>
+  <h3>Release date: {{ movie.released_at }}</h3>
+  <h3>IMDB: {{ movie.imdb_url }}</h3>
+
+  {% if user_rating %}
+    <p><strong>Your rating: {{ user_rating.score }}</strong></p>
+  {% else %}
+    <p><strong>You have not rated this movie.</strong></p>
+  {% endif %} 
+
+
+
+  <form id="rating-form" action="/#" method="POST">
+    Enter your score: <input type="number" name="new_score" id="score">
+    <input type="hidden" name="movie_id" value={{ movie.movie_id }}>
+    <br>
+    <input type="submit" value="Submit">
+  </form> <br>
+
+
+  <ul>
+    {% for rating in ratings %}
+      {% if not user_rating.user_id or rating.user_id != user_rating.user_id %}
+        <li>User {{ rating.user_id }} rated: {{ rating.score }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+
+    <script>
+
+    "use strict";
+
+    $(document).ready(function () {
+
+      function alertUser(results) {
+        alert(results);
+        $("strong").html("Your rating: " + $("#score").val());
+        $('#rating-form')[0].reset();
+      }
+    
+      function updateRating(evt) {
+        evt.preventDefault();
+
+        if ($("#score").val() > 5 || $("#score").val() < 0) {
+          alert("Please enter a rating between 0-5");
+          $('#rating-form')[0].reset();
+        } else {
+          var formInputs = $("#rating-form").serialize();
+
+          $.post('/new-score', formInputs, alertUser);
+        }
+      }
+
+      $("#rating-form").submit(updateRating);
+    });
+
+  </script>
+
+
+
+{% endblock %}
+
