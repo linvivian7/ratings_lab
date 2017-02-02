@@ -61,7 +61,11 @@ def movie_info(movieid):
     movie = Movie.query.filter_by(movie_id=movieid).one()
     ratings = Rating.query.filter_by(movie_id=movieid).all()
 
-    return render_template('movie.html', movie=movie, ratings=ratings)
+    if 'user' in session:
+        user = session['user']
+        user_rating = Rating.query.filter((Rating.user_id == user) & (Rating.movie_id == movieid)).first()
+
+    return render_template('movie.html', movie=movie, ratings=ratings, user_rating=user_rating)
 
 
 @app.route('/new-score', methods=["POST"])
@@ -74,8 +78,7 @@ def add_score():
     try:
         user = session["user"]
     except:
-        flash("Please log in or register to submit your ratings")
-        return redirect("/login")
+        return "Please log in or register to submit your ratings"
 
     try:
         rating = Rating.query.filter((Rating.user_id == user) & (Rating.movie_id == movie_id)).one()
