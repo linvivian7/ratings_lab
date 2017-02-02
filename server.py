@@ -6,8 +6,7 @@ from flask import Flask, jsonify, render_template, request, session, flash, redi
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.orm.exc import NoResultFound
 
-from model import connect_to_db, db, User, Rating, Movie
-
+from model import connect_to_db, db, User, Movie, Rating
 
 app = Flask(__name__)
 
@@ -40,16 +39,54 @@ def user_info(userid):
     """Shows available info for given user"""
 
     user = User.query.filter_by(user_id=userid).one()
-    ### Rewrite this to be done with joins and only one query
-    # ratings = Rating.query.filter_by(user_id=userid).all()
-    # mv_ratings = []
 
-    # for rating in ratings:
-    #     movie = Movie.query.filter_by(movie_id=rating.movie_id).one()
-    #     mv_ratings.append((movie.title, rating.score))
+    ratings = db.session.query(Rating.score, Movie.title).filter_by(user_id=userid).join(Movie).all()
 
-    # mv_ratings = db.session.query(Rating.user_id)
-    return render_template('user.html', user=user, ratings=mv_ratings)
+    return render_template('user.html', user=user, ratings=ratings)
+
+
+@app.route('/movies')
+def movie_list():
+    """Shows movies and info"""
+
+    movies = Movie.query.order_by(Movie.title).all()
+
+    return render_template('movie_list.html', movies=movies)
+
+
+@app.route('/movies/<movieid>')
+def movie_info(movieid):
+    """Shows available info for given user"""
+
+    movie = Movie.query.filter_by(movie_id=movieid).one()
+    ratings = Rating.query.filter_by(movie_id=movieid).all()
+
+    return render_template('movie.html', movie=movie, ratings=ratings)
+
+
+@app.route('/new-score', methods=["POST"])
+def add_score():
+    """Add new score to database"""
+
+    new_score = request.form.get('new_score')
+    movie_id = request.form.get('movie_id')
+
+    try:
+        user = session["user"]
+    except:
+        flash("Please log in or register to submit your ratings")
+        return redirect("/login")
+
+    try:
+        rating = Rating.query.filter((Rating.user_id == user) & (Rating.movie_id == movie_id)).one()
+        rating.score = new_score
+        db.session.commit()
+        return "Your rating has been updated!"
+    except:
+        rating = Rating(movie_id=movie_id, user_id=user, score=new_score)
+        db.session.add(rating)
+        db.session.commit()
+        return "Your rating has been added!"
 
 
 @app.route('/login')
@@ -76,9 +113,9 @@ def process_login():
 
         user = User(email=email, password=password)
         db.session.add(user)
+        db.session.commit()
 
         session['user'] = user.user_id
-        db.session.commit()
 
         html = '/users/' + str(user.user_id)
         return redirect(html)
