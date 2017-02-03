@@ -6,7 +6,7 @@ from flask import Flask, jsonify, render_template, request, session, flash, redi
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.orm.exc import NoResultFound
 
-from model import connect_to_db, db, User, Movie, Rating
+from model import connect_to_db, db, User, Movie, Rating, get_prediction, eye_prediction
 
 app = Flask(__name__)
 
@@ -63,9 +63,18 @@ def movie_info(movieid):
 
     if 'user' in session:
         user = session['user']
+
+        prediction = get_prediction(user, movieid)
+        eye_rating = eye_prediction(movieid)
+
         user_rating = Rating.query.filter((Rating.user_id == user) & (Rating.movie_id == movieid)).first()
 
-    return render_template('movie.html', movie=movie, ratings=ratings, user_rating=user_rating)
+    return render_template('movie.html',
+                           movie=movie,
+                           ratings=ratings,
+                           user_rating=user_rating,
+                           prediction=prediction,
+                           eye_rating=eye_rating)
 
 
 @app.route('/new-score', methods=["POST"])

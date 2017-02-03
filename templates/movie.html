@@ -6,11 +6,21 @@
   <h3>IMDB: {{ movie.imdb_url }}</h3>
 
   {% if user_rating %}
-    <p><strong>Your rating: {{ user_rating.score }}</strong></p>
-  {% else %}
-    <p><strong>You have not rated this movie.</strong></p>
-  {% endif %} 
+    <span class="status" hidden>rated</span>
+    <p class="bluebold rated" hidden>Your rating: {{ user_rating.score }}</p>
 
+  {% else %}
+    <span class="status" hidden>not_rated</span>
+    <p class="bluebold rated" id="change" hidden></p>
+
+  {% endif %}
+
+
+  <p class="bluebold rated" hidden>Eye rate this: {{ eye_rating }}... so your opinion is stupid.</p>
+
+  <p class="bluebold not_rated" hidden>You have not rated this movie.</p>
+
+  <p class="bluebold not_rated" hidden>You'll probably rate this a: {{ prediction }}</p>
 
 
   <form id="rating-form" action="/#" method="POST">
@@ -23,7 +33,7 @@
 
   <ul>
     {% for rating in ratings %}
-      {% if not user_rating.user_id or rating.user_id != user_rating.user_id %}
+      {% if not user_rating or rating.user_id != user_rating.user_id %}
         <li>User {{ rating.user_id }} rated: {{ rating.score }}</li>
       {% endif %}
     {% endfor %}
@@ -35,9 +45,18 @@
 
     $(document).ready(function () {
 
+      if ($(".status").html() === "rated") {
+        $(".rated").attr("hidden", false);
+      } else {
+        $(".not_rated").attr("hidden", false);
+      }
+
       function alertUser(results) {
         alert(results);
-        $("strong").html("Your rating: " + $("#score").val());
+        $(".not_rated").attr("hidden", true);
+        $(".rated").attr("hidden", false);
+        $("#change").html("Your rating: " + $("#score").val());
+        $(".status").html("rated");
         $('#rating-form')[0].reset();
       }
     
