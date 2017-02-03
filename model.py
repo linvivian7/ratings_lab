@@ -29,6 +29,50 @@ class User(db.Model):
 
         return "<User user_id=%s email=%s>" % (self.user_id, self.email)
 
+    def similarity(self, other):
+        """Return Pearson rating for user compared to other user."""
+
+        # Initialize dictionary of all self ratings
+        # Initialize list of tuples of similiarity between other user and self
+        our_ratings = {}
+        paired_ratings = []
+
+        for rating in self.ratings:
+            our_ratings[rating.movie_id] = rating.score
+
+        for other_rating in other.ratings:
+            our_rating = our_ratings.get(other_rating.movie_id)
+            if our_rating:
+                paired_ratings.append((our_rating, other_rating.score))
+
+        if paired_ratings:
+            return pearson(paired_ratings)
+
+        else:
+            return 0.0
+
+    def get_prediction(self, movie_id):
+        """Given a user and a movie, returns the predicted ratings"""
+
+        other_ratings = Rating.query.filter_by(movie_id=movie_id).all()
+
+        other_users = [rating.user for rating in other_ratings]
+
+        similarities = [
+            (self.similarity(o_user), o_user)
+            for o_user in other_users
+            ]
+
+        users_similar = sorted(similarities, reverse=True)
+
+        similarity_score, top_user = users_similar[0]
+        best_rating = Rating.query.filter_by(movie_id=movie_id,
+                                             user_id=top_user.user_id).one()
+
+        predicted_rating = best_rating.score * similarity_score
+
+        return int(round(predicted_rating))
+
 
 class Movie(db.Model):
     """Movie of ratings website."""
@@ -68,48 +112,6 @@ class Rating(db.Model):
 # Helper functions
 
 
-def similarity(self_ratings, o_user):
-
-    our_ratings = {}
-    for rating in self_ratings:
-        our_ratings[rating.movie_id] = rating.score
-
-    paired_ratings = []
-    for other_rating in o_user.ratings:
-        our_rating = our_ratings.get(other_rating.movie_id)
-        if our_rating:
-            pair = (our_rating, other_rating.score)
-            paired_ratings.append(pair)
-
-    if paired_ratings:
-        return pearson(paired_ratings)
-    else:
-        return 0.0
-
-
-def get_prediction(user_id, movie_id):
-    """Given a user and a movie, returns the predicted ratings"""
-
-    self_ratings = User.query.get(user_id).ratings
-    other_ratings = Rating.query.filter_by(movie_id=movie_id).all()
-
-    other_users = [rating.user for rating in other_ratings]
-
-    users_similar = []
-    for o_user in other_users:
-        sim = similarity(self_ratings, o_user)
-        users_similar.append((sim, o_user))
-
-    users_similar = sorted(users_similar, reverse=True)
-    top_score = users_similar[0]
-
-    similarity_score, top_user = top_score
-    best_rating = Rating.query.filter_by(movie_id=movie_id,
-                                         user_id=top_user.user_id).one()
-
-    predicted_rating = best_rating.score * similarity_score
-
-    return int(round(predicted_rating))
 
 
 
